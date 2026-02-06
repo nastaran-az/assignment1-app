@@ -2,13 +2,14 @@ name: Build and Push to ECR
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkou
+t
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials
