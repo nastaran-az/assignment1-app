@@ -2,11 +2,11 @@ name: Build and Push Images to Amazon ECR
 
 on:
   push:
-    branches: [ "main" ]   # اگر شاخه اصلی تو main است همین بماند
+    branches: [ "main" ]   
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
-  # این 2 تا را بعداً با نام واقعی ECR repoها عوض می‌کنیم
+  
   ECR_REPOSITORY_WEBAPP: REPLACE_WEBAPP_REPO_NAME
   ECR_REPOSITORY_MYSQL: REPLACE_MYSQL_REPO_NAME
 
