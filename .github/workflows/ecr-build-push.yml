@@ -1,0 +1,60 @@
+name: Build and Push Images to Amazon ECR
+
+on:
+  push:
+    branches: [ "main" ]   # اگر شاخه اصلی تو main است همین بماند
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  # این 2 تا را بعداً با نام واقعی ECR repoها عوض می‌کنیم
+  ECR_REPOSITORY_WEBAPP: REPLACE_WEBAPP_REPO_NAME
+  ECR_REPOSITORY_MYSQL: REPLACE_MYSQL_REPO_NAME
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image tags
+        id: vars
+        run: |
+          echo "SHA_TAG=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+          echo "LATEST_TAG=latest" >> $GITHUB_OUTPUT
+
+      # ---------- Build & Push: WEBAPP ----------
+      - name: Build, tag, and push WEBAPP image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SHA_TAG: ${{ steps.vars.outputs.SHA_TAG }}
+          LATEST_TAG: ${{ steps.vars.outputs.LATEST_TAG }}
+        run: |
+          docker build -t $ECR_REGISTRY/${ECR_REPOSITORY_WEBAPP}:$LATEST_TAG -f Dockerfile .
+          docker tag $ECR_REGISTRY/${ECR_REPOSITORY_WEBAPP}:$LATEST_TAG $ECR_REGISTRY/${ECR_REPOSITORY_WEBAPP}:$SHA_TAG
+          docker push $ECR_REGISTRY/${ECR_REPOSITORY_WEBAPP}:$LATEST_TAG
+          docker push $ECR_REGISTRY/${ECR_REPOSITORY_WEBAPP}:$SHA_TAG
+
+      # ---------- Build & Push: MYSQL ----------
+      - name: Build, tag, and push MYSQL image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SHA_TAG: ${{ steps.vars.outputs.SHA_TAG }}
+          LATEST_TAG: ${{ steps.vars.outputs.LATEST_TAG }}
+        run: |
+          docker build -t $ECR_REGISTRY/${ECR_REPOSITORY_MYSQL}:$LATEST_TAG -f mysql/Dockerfile mysql
+          docker tag $ECR_REGISTRY/${ECR_REPOSITORY_MYSQL}:$LATEST_TAG $ECR_REGISTRY/${ECR_REPOSITORY_MYSQL}:$SHA_TAG
+          docker push $ECR_REGISTRY/${ECR_REPOSITORY_MYSQL}:$LATEST_TAG
+          docker push $ECR_REGISTRY/${ECR_REPOSITORY_MYSQL}:$SHA_TAG
