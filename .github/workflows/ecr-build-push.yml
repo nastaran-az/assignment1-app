@@ -48,5 +48,4 @@ jobs:
         run: |
           docker build -t $ECR_REGISTRY/${ECR_REPOSITORY_MYSQL}:latest -f Dockerfile_mysql .
           docker push $ECR_REGISTRY/${ECR_REPOSITORY_MYSQL}:latest
-EOF
 
