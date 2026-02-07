@@ -1,12 +1,18 @@
-name: Build and Push to ECR
+name: Build and Push Images to Amazon ECR
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
+
+env:
+  AWS_REGION: us-east-1
+  ECR_WEBAPP_REPO: clo835-a1-webapp
+  ECR_MYSQL_REPO: clo835-a1-mysql
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -16,22 +22,28 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Webapp image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          aws ecr get-login-password --region us-east-1 \
-          | docker login --username AWS --password-stdin 884775304728.dkr.ecr.us-east-1.amazonaws.com
+          docker build -t $ECR_REGISTRY/$ECR_WEBAPP_REPO:$IMAGE_TAG -f Dockerfile .
+          docker push $ECR_REGISTRY/$ECR_WEBAPP_REPO:$IMAGE_TAG
+          docker tag  $ECR_REGISTRY/$ECR_WEBAPP_REPO:$IMAGE_TAG $ECR_REGISTRY/$ECR_WEBAPP_REPO:latest
+          docker push $ECR_REGISTRY/$ECR_WEBAPP_REPO:latest
 
-      - name: Build & Push webapp
+      - name: Build and push MySQL image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t clo835-a1-webapp .
-          docker tag clo835-a1-webapp:latest 884775304728.dkr.ecr.us-east-1.amazonaws.com/clo835-a1-webapp:latest
-          docker push 884775304728.dkr.ecr.us-east-1.amazonaws.com/clo835-a1-webapp:latest
-
-      - name: Build & Push mysql
-        run: |
-          docker build -f Dockerfile_mysql -t clo835-a1-mysql .
-          docker tag clo835-a1-mysql:latest 884775304728.dkr.ecr.us-east-1.amazonaws.com/clo835-a1-mysql:latest
-          docker push 884775304728.dkr.ecr.us-east-1.amazonaws.com/clo835-a1-mysql:latest
-
+          docker build -t $ECR_REGISTRY/$ECR_MYSQL_REPO:$IMAGE_TAG -f Dockerfile_mysql .
+          docker push $ECR_REGISTRY/$ECR_MYSQL_REPO:$IMAGE_TAG
+          docker tag  $ECR_REGISTRY/$ECR_MYSQL_REPO:$IMAGE_TAG $ECR_REGISTRY/$ECR_MYSQL_REPO:latest
+          docker push $ECR_REGISTRY/$ECR_MYSQL_REPO:latest
