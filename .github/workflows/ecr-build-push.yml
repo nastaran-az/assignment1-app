@@ -6,8 +6,12 @@ on:
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
+   
+  ECR_REPOSITORY_WEBAPP: assignment1-webapp
+  ECR_REPOSITORY_MYSQL: assignment1-mysql
   ECR_REPOSITORY_WEBAPP: clo835-a1-webapp
   ECR_REPOSITORY_MYSQL: clo835-a1-mysql
+ 
 
 jobs:
   build-and-push:
@@ -48,5 +52,4 @@ jobs:
         run: |
           docker build -t $ECR_REGISTRY/${ECR_REPOSITORY_MYSQL}:latest -f Dockerfile_mysql .
           docker push $ECR_REGISTRY/${ECR_REPOSITORY_MYSQL}:latest
-
 
